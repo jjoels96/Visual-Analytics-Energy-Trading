@@ -1,9 +1,18 @@
 const width = 975;
 const height = 610;
 
-// Zoom behavior
+// Set the projection to Mercator and adjust the scale and translation
+const projection = d3.geoMercator()
+    .scale((width - 3) / (2 * Math.PI))
+    .translate([width / 2, height / 2])
+    .center([0, 0]); // Longitude and Latitude of the center of the map
+
+// Path generator with the specified projection
+const path = d3.geoPath().projection(projection);
+
+// Zoom behavior with adjusted scale
 const zoom = d3.zoom()
-    .scaleExtent([1, 8])
+    .scaleExtent([1, 2.67]) // 8 / 3 = 2.67, for 3x less zoom
     .on("zoom", zoomed);
 
 // Create SVG
@@ -13,9 +22,6 @@ const svg = d3.select("#map")
     .attr("width", width)
     .attr("height", height)
     .call(zoom);
-
-// Path generator
-const path = d3.geoPath();
 
 // Group element for map features
 const g = svg.append("g");
@@ -63,7 +69,7 @@ function clicked(event, d) {
         zoom.transform,
         d3.zoomIdentity
             .translate(width / 2, height / 2)
-            .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
+            .scale(Math.min(2.67, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
             .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
         d3.pointer(event, svg.node())
     );
