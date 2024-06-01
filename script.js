@@ -25,10 +25,10 @@ let selectedCountries = [];
 let energyData = {};
 
 // Load energy data from CSV
-d3.csv("energy_import_export.csv").then(data => {
+d3.csv("impexp.csv").then(data => {
     data.forEach(row => {
-        const { Country, ImportExport, Type, Units } = row;
-        if (Type === "electricity") {
+        const { Country, Trade, Energy Types, unit } = row;
+        if (Type === "Electricity") {
             if (!energyData[Country]) {
                 energyData[Country] = [];
             }
@@ -134,8 +134,8 @@ function showTooltip(countryData, x, y) {
     const tooltip = d3.select("#tooltip");
 
     if (energyData[countryName]) {
-        const imports = energyData[countryName].filter(d => d.ImportExport === 'import');
-        const exports = energyData[countryName].filter(d => d.ImportExport === 'export');
+        const imports = energyData[countryName].filter(d => d.ImportExport === 'Import');
+        const exports = energyData[countryName].filter(d => d.ImportExport === 'Export');
 
         let htmlContent = `<strong>${countryName}</strong><br><br>`;
         htmlContent += `<strong>Electricity Imports:</strong><br>`;
