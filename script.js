@@ -22,6 +22,20 @@ const svg = d3.select("#map")
 const g = svg.append("g");
 
 let selectedCountries = [];
+let energyData = {};
+
+// Load energy data from CSV
+d3.csv("energy_import_export.csv").then(data => {
+    data.forEach(row => {
+        const { Country, ImportExport, Type, Units } = row;
+        if (Type === "electricity") {
+            if (!energyData[Country]) {
+                energyData[Country] = [];
+            }
+            energyData[Country].push({ ImportExport, Units });
+        }
+    });
+});
 
 d3.json("world-110m.v1.json").then(world => {
     const countries = g.append("g")
@@ -49,6 +63,7 @@ function reset() {
     g.selectAll("path").transition().style("fill", null);
     selectedCountries = [];
     svg.selectAll(".connection").remove();
+    d3.select("#tooltip").style("opacity", 0);
     svg.transition().duration(750).call(
         zoom.transform,
         d3.zoomIdentity,
@@ -59,14 +74,14 @@ function reset() {
 function clicked(event, d) {
     const [[x0, y0], [x1, y1]] = path.bounds(d);
     const centroid = path.centroid(d);
-    
+
     if (selectedCountries.length < 2) {
         selectedCountries.push({ data: d, centroid: centroid });
     } else {
         selectedCountries = [{ data: d, centroid: centroid }];
         svg.selectAll(".connection").remove();
     }
-    
+
     g.selectAll("path").transition().style("fill", null);
     d3.select(this).transition().style("fill", selectedCountries.length === 1 ? "red" : "blue");
 
@@ -83,13 +98,15 @@ function clicked(event, d) {
             .translate(-cx, -cy),
         d3.pointer(event, svg.node())
     );
+
+    showTooltip(d, event.pageX, event.pageY);
 }
 
 function drawConnection() {
     const line = d3.line()
         .x(d => d[0])
         .y(d => d[1]);
-    
+
     svg.append("path")
         .datum(selectedCountries.map(c => c.centroid))
         .attr("class", "connection")
@@ -109,6 +126,38 @@ function zoomed(event) {
     const { transform } = event;
     g.attr("transform", transform);
     g.attr("stroke-width", 1 / transform.k);
+}
+
+// Show tooltip with energy data
+function showTooltip(countryData, x, y) {
+    const countryName = countryData.properties.name;
+    const tooltip = d3.select("#tooltip");
+
+    if (energyData[countryName]) {
+        const imports = energyData[countryName].filter(d => d.ImportExport === 'import');
+        const exports = energyData[countryName].filter(d => d.ImportExport === 'export');
+
+        let htmlContent = `<strong>${countryName}</strong><br><br>`;
+        htmlContent += `<strong>Electricity Imports:</strong><br>`;
+        imports.forEach(d => {
+            htmlContent += `${d.Units}<br>`;
+        });
+        htmlContent += `<br><strong>Electricity Exports:</strong><br>`;
+        exports.forEach(d => {
+            htmlContent += `${d.Units}<br>`;
+        });
+
+        tooltip.html(htmlContent)
+            .style("left", `${x + 15}px`)
+            .style("top", `${y + 15}px`)
+            .transition()
+            .duration(200)
+            .style("opacity", 0.9);
+    } else {
+        tooltip.transition()
+            .duration(200)
+            .style("opacity", 0);
+    }
 }
 
 // Handle double-click to reset the view
